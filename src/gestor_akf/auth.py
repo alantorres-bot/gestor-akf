@@ -72,8 +72,12 @@ def exigir_login():  # pragma: no cover - depende do Streamlit
         st.stop()
 
     boot = db._segredo("BOOTSTRAP_ADMIN_EMAIL")
+    # O admin bootstrap entra sempre, sem depender do banco (mesmo antes do schema).
+    if decidir_papel(email, boot, None) == "admin":
+        return email, "admin"
+
     try:
-        papel = decidir_papel(email, boot, db.get_papel(email))
+        papel = db.get_papel(email)
     except db.DBError as e:
         st.error(f"Não consegui falar com o banco: {e}")
         st.stop()
