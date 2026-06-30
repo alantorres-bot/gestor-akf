@@ -143,12 +143,14 @@ def test_sem_token_gera_erro(monkeypatch):
 # Fluxo completo (mock) -> resumir
 # --------------------------------------------------------------------------- #
 def test_buscar_titulos_abertos_fluxo(monkeypatch):
+    from datetime import timedelta
+    venc = (date.today() + timedelta(days=30)).isoformat()  # a vencer (não vencido)
     contas = [{
         "data": [
             {"codTitulo": "1001U", "codCliente": 10, "codPortador": 998,
-             "dataVenc": "2024-02-10", "dataEmissao": "2024-01-10", "valorTitulo": 1000},
+             "dataVenc": venc, "dataEmissao": "2024-01-10", "valorTitulo": 1000},
             {"codTitulo": "1002U", "codCliente": 20, "codPortador": 91,
-             "dataVenc": "2024-03-10", "dataEmissao": "2024-01-10", "valorTitulo": 500},
+             "dataVenc": venc, "dataEmissao": "2024-01-10", "valorTitulo": 500},
         ],
         "continuationToken": "",
     }]

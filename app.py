@@ -309,12 +309,15 @@ elif pagina == "📥 Carteira":
 
         st.session_state.exposicao_atual = r.antecipados_valor
 
-        filtro = st.radio("Mostrar", ["Disponíveis", "Antecipados (AKF)", "Todos"],
+        filtro = st.radio("Mostrar",
+                          ["Disponíveis", "Antecipados (AKF)", "Vencidos", "Todos"],
                           horizontal=True)
         if filtro == "Disponíveis":
             mostra = [t for t in titulos if t.disponivel]
         elif filtro == "Antecipados (AKF)":
             mostra = [t for t in titulos if t.antecipado]
+        elif filtro == "Vencidos":
+            mostra = [t for t in titulos if t.vencido]
         else:
             mostra = titulos
 
@@ -341,20 +344,19 @@ elif pagina == "🎯 Seleção de títulos":
         st.stop()
 
     p = _params()
-    c1, c2, c3 = st.columns(3)
+    c1, c2 = st.columns(2)
     with c1:
         alvo = st.number_input("Caixa necessário (R$)", min_value=0.0,
                                value=200000.0, step=10000.0, format="%.2f")
     with c2:
         data_ref = st.date_input("Data de referência", value=date.today())
-    with c3:
-        incluir_venc = st.checkbox("Incluir vencidos", value=False)
+    st.caption("Apenas títulos **a vencer** entram na seleção — vencidos não são antecipáveis.")
 
     exposicao = st.session_state.get("exposicao_atual", Z)
     if st.button("Sugerir seleção", type="primary"):
         sel = selecionar_titulos(
             st.session_state.carteira, Decimal(str(alvo)), data_ref, p,
-            incluir_vencidos=incluir_venc, exposicao_atual=Decimal(str(exposicao)),
+            exposicao_atual=Decimal(str(exposicao)),
         )
         st.session_state.selecao = sel
 

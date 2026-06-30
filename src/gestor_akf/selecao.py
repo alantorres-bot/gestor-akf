@@ -65,7 +65,6 @@ def selecionar_titulos(
     data_ref: date,
     params: Parametros,
     *,
-    incluir_vencidos: bool = False,
     exposicao_atual: Decimal = Z,
     taxa_am: Optional[Decimal] = None,
 ) -> ResultadoSelecao:
@@ -79,10 +78,14 @@ def selecionar_titulos(
     taxa_am = taxa_am if taxa_am is not None else params.taxa_referencia_am
     res = ResultadoSelecao(valor_alvo=valor_alvo)
 
-    # (b) candidatos: disponíveis, com vencimento conhecido; ordena por prazo.
-    candidatos = [t for t in titulos if t.disponivel and t.vencimento is not None]
-    if not incluir_vencidos:
-        candidatos = [t for t in candidatos if (t.vencimento - data_ref).days >= 0]
+    # (b) candidatos: disponíveis (não-AKF e a vencer), com vencimento conhecido.
+    # Vencidos nunca entram: além de t.disponivel já excluir vencidos, exigimos
+    # vencimento a partir da data de referência.
+    candidatos = [
+        t for t in titulos
+        if t.disponivel and t.vencimento is not None
+        and (t.vencimento - data_ref).days >= 0
+    ]
     candidatos.sort(key=lambda t: ((t.vencimento - data_ref).days, -t.valor))
 
     total = Z

@@ -47,9 +47,9 @@ def test_classificacao_antecipado(csv_path):
     ts = carregar_carteira(csv_path)
     by = {t.titulo: t for t in ts}
     assert by["1001187U"].antecipado is True       # portador 998 AKF
-    assert by["1001285U"].disponivel is True       # CARTEIRA
-    assert by["4002118U"].disponivel is True       # BRADESCO
+    assert by["1001285U"].disponivel is True       # CARTEIRA, a vencer
     assert by["4002118U"].vencido is True          # dias_atraso 69
+    assert by["4002118U"].disponivel is False      # vencido -> não antecipável
 
 
 def test_resumo(csv_path):
@@ -57,8 +57,8 @@ def test_resumo(csv_path):
     assert r.total_titulos == 3
     assert r.antecipados_qtd == 1
     assert r.antecipados_valor == D("17000.00")
-    assert r.disponiveis_qtd == 2
-    assert r.disponiveis_valor == D("2664.64")
+    assert r.disponiveis_qtd == 1                   # só 1001285U (a vencer); 4002118U está vencido
+    assert r.disponiveis_valor == D("1328.00")
 
 
 def test_dias_ate_vencimento(csv_path):
@@ -83,4 +83,5 @@ def test_real_antecipados():
 def test_real_nao_antecipados():
     ts = carregar_carteira(_REAL_NAO)
     assert len(ts) > 0
-    assert all(t.disponivel for t in ts)
+    # Arquivo de títulos SEM a AKF (pode conter vencidos, que não são "disponíveis").
+    assert all(not t.antecipado for t in ts)

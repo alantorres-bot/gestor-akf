@@ -73,7 +73,9 @@ class TituloCarteira:
 
     @property
     def disponivel(self) -> bool:
-        return not self.antecipado
+        # Disponível para antecipar = não está na AKF E ainda não venceu.
+        # Título vencido nunca é antecipável.
+        return not self.antecipado and not self.vencido
 
     def dias_ate_vencimento(self, ref: date) -> Optional[int]:
         if self.vencimento is None:
