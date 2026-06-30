@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# Dados sensíveis — nunca versionar
+dados/
+*.xlsx
+*.pdf
+config/parametros.json
+config/consistem.secret
+.streamlit/secrets.toml

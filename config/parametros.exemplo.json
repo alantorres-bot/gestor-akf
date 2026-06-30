@@ -1,0 +1,33 @@
+{
+  "_ajuda": "Copie este arquivo para 'parametros.json' (mesma pasta) e ajuste. Valores em reais, sem símbolo. Taxas em fração (0.02 = 2%).",
+
+  "clientes_sem_boleto_factoring": [
+    "MIP",
+    "MB",
+    "JANEIRO",
+    "CAPARAO",
+    "HOUSE GARDEN",
+    "QRTZ 39"
+  ],
+  "observacao_sem_boleto": "Operar 1 dia após o vencimento, sem emitir boleto.",
+
+  "limite_global_akf": 3000000.00,
+  "limite_por_sacado": {
+    "_exemplo_nome_sacado": 500000.00
+  },
+
+  "multa_recompra": 0.02,
+
+  "taxa_referencia_am": 0.0218,
+  "taxas_bancarias_am": {
+    "capital_giro": 0.022,
+    "desconto_duplicata": 0.019
+  },
+
+  "concentracao_maxima_por_sacado": 0.30,
+
+  "contatos_akf": {
+    "para": ["andre.kamil@akfsec.com.br", "kayza@akfsec.com.br"],
+    "cc": ["akfsec@outlook.com"]
+  }
+}

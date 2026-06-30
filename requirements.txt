@@ -1,0 +1,20 @@
+# Gestor de Antecipações AKF — Neo Formas
+# Dependências (100% local; nada é enviado para a internet).
+
+# Leitura de dados
+pandas>=2.2
+openpyxl>=3.1          # ler/gravar Excel (.xlsx)
+requests>=2.31         # chamadas à API REST do Consistem (carteira ao vivo)
+
+# Borderôs em PDF (são imagens escaneadas -> precisa renderizar + OCR)
+pymupdf>=1.24          # renderiza o PDF em imagem
+rapidocr-onnxruntime>=1.3   # OCR local (modelos embutidos, não baixa nada online)
+
+# Interface
+streamlit>=1.42          # >=1.42 traz st.user (login no Community Cloud)
+
+# Banco compartilhado (modo multiusuário hospedado)
+supabase>=2.4            # cliente Postgres/Storage (import sob demanda)
+
+# Testes
+pytest>=8.0

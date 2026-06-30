@@ -1,0 +1,13 @@
+[project]
+name = "gestor-akf"
+version = "0.1.0"
+description = "Gestor de Antecipações de Recebíveis — Neo Formas x AKF Securitizadora"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "ocr: testes que rodam o OCR sobre PDFs reais (lentos; pulados se o arquivo não existir)",
+    "api: testes que chamam a API real do Consistem (exigem token; pulados sem CONSISTEM_API_KEY)",
+]

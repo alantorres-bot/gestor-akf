@@ -1,0 +1,5 @@
+{
+  "_comentario": "Copie para config/consistem.json se precisar mudar a base/empresa. O TOKEN NÃO fica aqui — use a variável de ambiente CONSISTEM_API_KEY ou o arquivo config/consistem.secret (o mesmo token do NEOControl, ~250 caracteres). Ambos são ignorados pelo git.",
+  "base_url": "https://erp.neoformas.com.br/api",
+  "empresa": "1"
+}
