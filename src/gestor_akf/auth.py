@@ -47,10 +47,19 @@ def _email_logado() -> Optional[str]:  # pragma: no cover - depende do Streamlit
     import streamlit as st
 
     email = None
+    # Community Cloud (Streamlit 1.41.x) expõe o e-mail do viewer aqui, sem OIDC.
     try:
-        email = getattr(st.user, "email", None)
+        eu = getattr(st, "experimental_user", None)
+        if eu is not None:
+            email = eu.get("email") if hasattr(eu, "get") else getattr(eu, "email", None)
     except Exception:
         email = None
+    # OIDC nativo (st.login) / versões com [auth] configurado.
+    if not email:
+        try:
+            email = getattr(st.user, "email", None)
+        except Exception:
+            email = None
     if not email:
         email = db._segredo("DEV_EMAIL")  # fallback p/ testar deploy manualmente
     return email.lower().strip() if email else None
