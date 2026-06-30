@@ -78,6 +78,24 @@ def exigir_login():  # pragma: no cover - depende do Streamlit
     email = _email_logado()
     if not email:
         st.error("Faça login para acessar o sistema.")
+        # DIAGNÓSTICO TEMPORÁRIO — mostra o que o Streamlit expõe sobre o usuário.
+        diag = {}
+        try:
+            eu = getattr(st, "experimental_user", None)
+            diag["experimental_user_type"] = type(eu).__name__
+            diag["experimental_user"] = (
+                eu.to_dict() if hasattr(eu, "to_dict")
+                else (dict(eu) if eu else None)
+            )
+        except Exception as e:  # noqa: BLE001
+            diag["experimental_user_err"] = repr(e)
+        try:
+            u = st.user
+            diag["user_type"] = type(u).__name__
+            diag["user"] = u.to_dict() if hasattr(u, "to_dict") else None
+        except Exception as e:  # noqa: BLE001
+            diag["user_err"] = repr(e)
+        st.json(diag)
         st.stop()
 
     boot = db._segredo("BOOTSTRAP_ADMIN_EMAIL")
