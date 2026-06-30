@@ -13,6 +13,7 @@ import tempfile
 from datetime import date
 from decimal import Decimal
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 
@@ -36,50 +37,84 @@ AZUL = "#3E5A82"  # azul-aço da marca Neo Formas
 
 
 def _estilo():
-    """Injeta o visual da marca (cartões, cabeçalhos, sidebar)."""
+    """Injeta o visual da marca (estilo fintech: cartões arredondados, fundo suave)."""
     st.markdown(
         """
         <style>
-        h1, h2, h3 { color: #2A3F5F; font-weight: 700; }
-        /* Métricas viram cartões */
+        /* Fundo geral levemente azulado -> cartões brancos "flutuam" */
+        [data-testid="stAppViewContainer"] { background: #F5F8FC; }
+        .block-container { padding-top: 2.2rem; }
+        h1, h2, h3 { color: #1F2A37; font-weight: 800; letter-spacing: -.01em; }
+
+        /* Métricas como cartões arredondados */
         div[data-testid="stMetric"] {
             background: #FFFFFF;
-            border: 1px solid #E2E8F2;
-            border-radius: 12px;
-            padding: 14px 18px;
-            box-shadow: 0 1px 3px rgba(30,42,58,.06);
+            border: 1px solid #EAF0F7;
+            border-radius: 16px;
+            padding: 16px 20px;
+            box-shadow: 0 4px 16px rgba(30,42,58,.05);
         }
         div[data-testid="stMetricLabel"] p { color: #5B6B82; font-weight: 600; }
-        div[data-testid="stMetricValue"] { color: #2A3F5F; }
+        div[data-testid="stMetricValue"] { color: #1F2A37; }
+
         /* Sidebar */
-        section[data-testid="stSidebar"] { border-right: 1px solid #E2E8F2; }
-        section[data-testid="stSidebar"] img { border-radius: 8px; }
-        /* Botões arredondados */
+        section[data-testid="stSidebar"] { background: #FFFFFF; border-right: 1px solid #EAF0F7; }
+        section[data-testid="stSidebar"] img { border-radius: 10px; }
+
+        /* Botões arredondados (pílula) */
         .stButton>button, .stDownloadButton>button, .stFormSubmitButton>button {
-            border-radius: 8px; font-weight: 600;
+            border-radius: 12px; font-weight: 700; padding: .5rem 1.1rem;
+            box-shadow: 0 2px 8px rgba(62,90,130,.18);
         }
-        /* Tabelas e expanders mais suaves */
-        div[data-testid="stExpander"] { border-radius: 10px; }
-        /* Faixa de topo fina na cor da marca */
-        .block-container { padding-top: 2.2rem; }
+        /* Caixas de info/aviso e expanders mais suaves */
+        div[data-testid="stExpander"] { border-radius: 14px; border-color: #EAF0F7; }
+        div[data-testid="stAlert"] { border-radius: 14px; }
+        /* Tabela com cantos arredondados */
+        div[data-testid="stDataFrame"] { border-radius: 14px; overflow: hidden; }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
 
-def card_kpi(titulo: str, valor: str, sub: str = "", cor: str = AZUL):
-    """Cartão de indicador para o painel inicial."""
+def card_kpi(titulo: str, valor: str, sub: str = "", cor: str = AZUL, icone: str = "•"):
+    """Cartão de indicador (estilo fintech) com selo de ícone colorido."""
     st.markdown(
         f"""
-        <div style="background:#fff;border:1px solid #E2E8F2;border-left:5px solid {cor};
-                    border-radius:12px;padding:16px 18px;box-shadow:0 1px 3px rgba(30,42,58,.06);">
-          <div style="color:#5B6B82;font-size:.85rem;font-weight:600;">{titulo}</div>
-          <div style="color:#2A3F5F;font-size:1.55rem;font-weight:700;line-height:1.3;">{valor}</div>
-          <div style="color:#8492A6;font-size:.8rem;">{sub}</div>
+        <div style="background:#fff;border:1px solid #EAF0F7;border-radius:16px;
+                    padding:18px 20px;box-shadow:0 4px 16px rgba(30,42,58,.05);height:100%;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span style="background:{cor}1A;color:{cor};width:38px;height:38px;border-radius:11px;
+                         display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem;">{icone}</span>
+            <span style="color:#5B6B82;font-size:.85rem;font-weight:600;">{titulo}</span>
+          </div>
+          <div style="color:#1F2A37;font-size:1.6rem;font-weight:800;line-height:1.2;">{valor}</div>
+          <div style="color:#8492A6;font-size:.8rem;margin-top:2px;">{sub}</div>
         </div>
         """,
         unsafe_allow_html=True,
+    )
+
+
+def rosca_carteira(r):
+    """Gráfico de rosca (Altair) com a composição da carteira por valor."""
+    venc = float(r.total_valor - r.antecipados_valor - r.disponiveis_valor)
+    dados = pd.DataFrame({
+        "Categoria": ["Disponível (a vencer)", "Antecipado (AKF)", "Vencido"],
+        "Valor": [float(r.disponiveis_valor), float(r.antecipados_valor), max(venc, 0.0)],
+    })
+    cores = ["#2E7D5B", AZUL, "#C0392B"]
+    return (
+        alt.Chart(dados)
+        .mark_arc(innerRadius=68, cornerRadius=5)
+        .encode(
+            theta=alt.Theta("Valor:Q", stack=True),
+            color=alt.Color("Categoria:N",
+                            scale=alt.Scale(domain=list(dados["Categoria"]), range=cores),
+                            legend=alt.Legend(title=None, orient="bottom")),
+            tooltip=["Categoria:N", alt.Tooltip("Valor:Q", format=",.2f", title="R$")],
+        )
+        .properties(height=260)
     )
 
 
@@ -193,16 +228,36 @@ if pagina == "🏠 Início":
         r = resumir(titulos)
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            card_kpi("Carteira total", rs(r.total_valor), f"{r.total_titulos} títulos")
+            card_kpi("Carteira total", rs(r.total_valor), f"{r.total_titulos} títulos",
+                     AZUL, "💼")
         with c2:
             card_kpi("Disponível p/ antecipar", rs(r.disponiveis_valor),
-                     f"{r.disponiveis_qtd} títulos", "#2E7D5B")
+                     f"{r.disponiveis_qtd} títulos", "#2E7D5B", "✅")
         with c3:
             card_kpi("Já antecipado (AKF)", rs(r.antecipados_valor),
-                     f"{r.antecipados_qtd} títulos", "#B7791F")
+                     f"{r.antecipados_qtd} títulos", "#B7791F", "🤝")
         with c4:
             card_kpi("Vencidos", rs(r.vencidos_valor),
-                     f"{r.vencidos_qtd} títulos", "#C0392B")
+                     f"{r.vencidos_qtd} títulos", "#C0392B", "⏰")
+
+        st.write("")
+        g1, g2 = st.columns([2, 3])
+        with g1:
+            st.markdown("**Composição da carteira**")
+            st.altair_chart(rosca_carteira(r), use_container_width=True)
+        with g2:
+            st.markdown("**Maiores títulos disponíveis**")
+            disp = sorted([t for t in titulos if t.disponivel],
+                          key=lambda t: t.valor, reverse=True)[:6]
+            if disp:
+                df_top = pd.DataFrame([{
+                    "Título": t.titulo, "Cliente": t.cliente_nome,
+                    "Vencimento": t.vencimento, "Valor": float(t.valor),
+                } for t in disp])
+                st.dataframe(df_top, width="stretch", hide_index=True,
+                             column_config={"Valor": st.column_config.NumberColumn(format="R$ %.2f")})
+            else:
+                st.caption("Nenhum título disponível a vencer no momento.")
         st.caption(f"Origem: {st.session_state.get('carteira_origem', '—')}")
     else:
         st.info("Carregue a carteira na página **📥 Carteira** (direto da API do "

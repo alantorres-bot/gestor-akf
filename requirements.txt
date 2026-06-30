@@ -3,6 +3,7 @@
 
 # Leitura de dados
 pandas>=2.2
+altair>=5.0             # gráficos (rosca/composição) — já vem com o Streamlit
 openpyxl>=3.1          # ler/gravar Excel (.xlsx)
 requests>=2.31         # chamadas à API REST do Consistem (carteira ao vivo)
 
