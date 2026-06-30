@@ -28,9 +28,59 @@ from gestor_akf.parametros import carregar_parametros
 from gestor_akf.passivo import importar_planilha_por_fora
 from gestor_akf.selecao import selecionar_titulos
 
-st.set_page_config(page_title="Gestor de Antecipações AKF", page_icon="💸", layout="wide")
+st.set_page_config(page_title="Gestor AKF · Neo Formas", page_icon="🔷", layout="wide")
 
 Z = Decimal("0.00")
+LOGO = os.path.join(os.path.dirname(__file__), "assets", "logo-neoformas.jpg")
+AZUL = "#3E5A82"  # azul-aço da marca Neo Formas
+
+
+def _estilo():
+    """Injeta o visual da marca (cartões, cabeçalhos, sidebar)."""
+    st.markdown(
+        """
+        <style>
+        h1, h2, h3 { color: #2A3F5F; font-weight: 700; }
+        /* Métricas viram cartões */
+        div[data-testid="stMetric"] {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F2;
+            border-radius: 12px;
+            padding: 14px 18px;
+            box-shadow: 0 1px 3px rgba(30,42,58,.06);
+        }
+        div[data-testid="stMetricLabel"] p { color: #5B6B82; font-weight: 600; }
+        div[data-testid="stMetricValue"] { color: #2A3F5F; }
+        /* Sidebar */
+        section[data-testid="stSidebar"] { border-right: 1px solid #E2E8F2; }
+        section[data-testid="stSidebar"] img { border-radius: 8px; }
+        /* Botões arredondados */
+        .stButton>button, .stDownloadButton>button, .stFormSubmitButton>button {
+            border-radius: 8px; font-weight: 600;
+        }
+        /* Tabelas e expanders mais suaves */
+        div[data-testid="stExpander"] { border-radius: 10px; }
+        /* Faixa de topo fina na cor da marca */
+        .block-container { padding-top: 2.2rem; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def card_kpi(titulo: str, valor: str, sub: str = "", cor: str = AZUL):
+    """Cartão de indicador para o painel inicial."""
+    st.markdown(
+        f"""
+        <div style="background:#fff;border:1px solid #E2E8F2;border-left:5px solid {cor};
+                    border-radius:12px;padding:16px 18px;box-shadow:0 1px 3px rgba(30,42,58,.06);">
+          <div style="color:#5B6B82;font-size:.85rem;font-weight:600;">{titulo}</div>
+          <div style="color:#2A3F5F;font-size:1.55rem;font-weight:700;line-height:1.3;">{valor}</div>
+          <div style="color:#8492A6;font-size:.8rem;">{sub}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -86,12 +136,19 @@ def _salvar_temp(uploaded) -> str:
 # --------------------------------------------------------------------------- #
 # Navegação
 # --------------------------------------------------------------------------- #
-st.sidebar.title("💸 Gestor AKF")
-st.sidebar.caption("Neo Formas — antecipação de recebíveis")
+_estilo()
+try:
+    st.logo(LOGO, size="large")
+except Exception:
+    pass  # versões antigas do Streamlit sem st.logo
 
 # Login e papéis (modo local quando o banco não está configurado).
 email_usuario, papel_usuario = auth.exigir_login()
 pode_escrever = auth.pode_escrever(papel_usuario)
+
+st.sidebar.markdown("### Gestor de Antecipações")
+st.sidebar.caption("Neo Formas × AKF Securitizadora")
+st.sidebar.divider()
 
 PAGINAS = [
     "🏠 Início",
@@ -121,33 +178,59 @@ else:
 # Página: Início
 # --------------------------------------------------------------------------- #
 if pagina == "🏠 Início":
-    st.title("Gestor de Antecipações AKF")
-    st.markdown(
-        """
-        Bem-vindo. Este app ajuda a **selecionar títulos**, **ler borderôs**,
-        **conciliar** e **controlar o passivo da diferença "por fora"** da operação
-        com a AKF Securitizadora.
+    cab1, cab2 = st.columns([1, 4])
+    with cab1:
+        st.image(LOGO, width=150)
+    with cab2:
+        st.title("Gestor de Antecipações AKF")
+        nome = email_usuario.split("@")[0].split(".")[0].capitalize()
+        st.caption(f"Bem-vindo, {nome}. Operação Neo Formas × AKF Securitizadora.")
 
-        **Como usar, na ordem natural do dia a dia:**
-        1. **📥 Carteira** — carregue o export do Consistem (títulos em aberto).
-        2. **🎯 Seleção** — diga quanto de caixa precisa; o app sugere os títulos.
-        3. **✉️ Instrução** — gere o e-mail para a AKF.
-        4. **📄 Borderôs** — depois que a AKF responder, leia os PDFs recebidos.
-        5. **🔎 Conciliação** — confira se o que foi operado bate com o pedido.
-        6. **📊 Passivo "por fora"** — acompanhe o saldo da diferença.
-        7. **💰 Custo efetivo** — veja o custo real (oficial + por fora).
-        """
-    )
-    p = _params()
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Limite global AKF", rs(p.limite_global_akf))
-    c2.metric("Multa de recompra", formatar_pct(p.multa_recompra, 0))
-    c3.metric("Taxa de referência", formatar_pct(p.taxa_referencia_am))
-    st.info(
-        "Os parâmetros (clientes sem boleto, limites, taxas) ficam em "
-        "`config/parametros.json`. Sem esse arquivo, o app usa valores padrão.",
-        icon="⚙️",
-    )
+    # --- Painel da carteira ---
+    st.subheader("Visão da carteira")
+    titulos = st.session_state.get("carteira")
+    if titulos:
+        r = resumir(titulos)
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            card_kpi("Carteira total", rs(r.total_valor), f"{r.total_titulos} títulos")
+        with c2:
+            card_kpi("Disponível p/ antecipar", rs(r.disponiveis_valor),
+                     f"{r.disponiveis_qtd} títulos", "#2E7D5B")
+        with c3:
+            card_kpi("Já antecipado (AKF)", rs(r.antecipados_valor),
+                     f"{r.antecipados_qtd} títulos", "#B7791F")
+        with c4:
+            card_kpi("Vencidos", rs(r.vencidos_valor),
+                     f"{r.vencidos_qtd} títulos", "#C0392B")
+        st.caption(f"Origem: {st.session_state.get('carteira_origem', '—')}")
+    else:
+        st.info("Carregue a carteira na página **📥 Carteira** (direto da API do "
+                "Consistem ou via CSV) para ver o painel.", icon="📥")
+
+    st.divider()
+    cesq, cdir = st.columns([3, 2])
+    with cesq:
+        st.subheader("Como usar, no dia a dia")
+        st.markdown(
+            """
+            1. **📥 Carteira** — títulos em aberto, direto da API do Consistem.
+            2. **🎯 Seleção** — diga quanto de caixa precisa; o app sugere os títulos ao menor custo.
+            3. **✉️ Instrução** — gere o e-mail para a AKF.
+            4. **📄 Borderôs** — depois que a AKF responder, leia os PDFs recebidos (OCR).
+            5. **🔎 Conciliação** — confira se o que foi operado bate com o pedido.
+            6. **📊 Passivo "por fora"** — acompanhe o saldo da diferença.
+            7. **💰 Custo efetivo** — veja o custo real (oficial + por fora).
+            """
+        )
+    with cdir:
+        st.subheader("Parâmetros")
+        p = _params()
+        m1, m2 = st.columns(2)
+        m1.metric("Multa de recompra", formatar_pct(p.multa_recompra, 0))
+        m2.metric("Taxa de referência", formatar_pct(p.taxa_referencia_am) + " a.m.")
+        st.caption("Sem teto de desconto: o limite da AKF é volátil, então não barra "
+                   "a seleção. Ajustes finos ficam em `config/parametros.json`.")
 
 
 # --------------------------------------------------------------------------- #
@@ -296,12 +379,6 @@ elif pagina == "🎯 Seleção de títulos":
         st.dataframe(df, width="stretch", hide_index=True,
                      column_config={"Valor": st.column_config.NumberColumn(format="R$ %.2f")})
 
-        if sel.excluidos_concentracao or sel.excluidos_limite:
-            with st.expander("Títulos barrados (concentração / limite)"):
-                for t in sel.excluidos_concentracao:
-                    st.write(f"• Concentração: {t.titulo} — {t.cliente_nome} — {rs(t.valor)}")
-                for t in sel.excluidos_limite:
-                    st.write(f"• Limite: {t.titulo} — {t.cliente_nome} — {rs(t.valor)}")
 
 
 # --------------------------------------------------------------------------- #

@@ -7,9 +7,11 @@ Ordem de prioridade aplicada:
   (a) necessidade de caixa  — para de selecionar ao atingir o valor-alvo;
   (b) menor prazo = menor custo — ordena por dias até o vencimento (crescente);
   (c) clientes sem boleto de factoring — marca a observação da regra;
-  (d) evita concentração por sacado — limita o quanto cada sacado entra;
-  (e) respeita o limite disponível na AKF (global e por sacado);
-  (f) estima o custo efetivo da seleção.
+  (d) estima o custo efetivo da seleção.
+
+Obs.: não há mais teto de desconto (limite global AKF), limite por sacado nem
+concentração máxima — o limite da AKF é volátil, então a seleção apenas prioriza
+e some títulos disponíveis até cobrir o valor-alvo.
 """
 
 from __future__ import annotations
@@ -83,35 +85,13 @@ def selecionar_titulos(
         candidatos = [t for t in candidatos if (t.vencimento - data_ref).days >= 0]
     candidatos.sort(key=lambda t: ((t.vencimento - data_ref).days, -t.valor))
 
-    limite_global = params.limite_global_akf
-    cap_concentracao = (
-        valor_alvo * params.concentracao_maxima_por_sacado
-        if params.concentracao_maxima_por_sacado > 0 else None
-    )
-
-    por_sacado: dict[str, Decimal] = {}
     total = Z
 
     for t in candidatos:
         if total >= valor_alvo:
             break
-        sac = _chave_sacado(t)
-        novo_sacado = por_sacado.get(sac, Z) + t.valor
-
-        # (e) limite global na AKF
-        if limite_global > 0 and (exposicao_atual + total + t.valor) > limite_global:
-            res.excluidos_limite.append(t)
-            continue
-        # (e) limite por sacado (se configurado)
-        lim_sac = params.limite_por_sacado.get(sac) or params.limite_por_sacado.get(t.cliente_nome)
-        if lim_sac is not None and novo_sacado > lim_sac:
-            res.excluidos_limite.append(t)
-            continue
-        # (d) concentração máxima por sacado
-        if cap_concentracao is not None and novo_sacado > cap_concentracao and total > 0:
-            res.excluidos_concentracao.append(t)
-            continue
-
+        # Sem teto de desconto / limite por sacado / concentração: o limite da AKF
+        # é volátil, então apenas priorizamos e somamos até cobrir o alvo.
         dias = (t.vencimento - data_ref).days
         sem_boleto = params.cliente_sem_boleto(t.cliente_nome)
         obs = params.observacao_sem_boleto if sem_boleto else ""
@@ -123,7 +103,6 @@ def selecionar_titulos(
             titulo=t, dias=dias, sem_boleto=sem_boleto,
             observacao=obs, desagio_estimado=desagio,
         ))
-        por_sacado[sac] = novo_sacado
         total += t.valor
 
     res.valor_total = total
@@ -143,7 +122,7 @@ def selecionar_titulos(
         falta = (valor_alvo - total).quantize(Decimal("0.01"))
         res.avisos.append(
             f"Não foi possível atingir o valor-alvo: faltam R$ {falta} "
-            f"(candidatos disponíveis insuficientes ou barrados por limite/concentração)."
+            f"(títulos disponíveis na carteira são insuficientes)."
         )
     if total > valor_alvo:
         sobra = (total - valor_alvo).quantize(Decimal("0.01"))

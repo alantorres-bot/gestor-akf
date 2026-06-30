@@ -15,7 +15,7 @@ passivo da diferença "por fora" e medir o custo efetivo real.
 | Tela | Para que serve |
 |------|----------------|
 | 📥 **Carteira** | Busca os títulos em aberto **direto da API do Consistem** (ou via export CSV) e separa o que já está na AKF do que está disponível para antecipar. |
-| 🎯 **Seleção** | Você diz quanto de caixa precisa; o app sugere os títulos ao **menor custo** (menor prazo primeiro), marcando clientes sem boleto, evitando concentração e respeitando o limite da AKF. |
+| 🎯 **Seleção** | Você diz quanto de caixa precisa; o app sugere os títulos ao **menor custo** (menor prazo primeiro), marcando clientes sem boleto. Sem teto de desconto (o limite da AKF é volátil). |
 | ✉️ **Instrução** | Gera o texto do e-mail para André/Kayza com os títulos e as observações corretas. |
 | 📄 **Borderôs** | Lê os PDFs escaneados da AKF por **OCR** e **confere a aritmética** de cada um automaticamente. |
 | 🔎 **Conciliação** | Cruza o que foi pedido × o que foi operado: NFs não operadas, divergência de valor/vencimento, duplicidade, recompra a conferir. |
@@ -77,10 +77,12 @@ Os ajustes ficam em `config/parametros.json`. Para criar o seu:
 2. Edite com o Bloco de Notas. Principais campos:
    - `clientes_sem_boleto_factoring`: lista de clientes que operam "1 dia após o
      vencimento, sem boleto" (ex.: MIP, MB, Janeiro, Caparaó, House Garden, QRTZ 39).
-   - `limite_global_akf` e `limite_por_sacado`: limites de crédito.
    - `multa_recompra`: `0.02` = 2%.
    - `taxa_referencia_am`: taxa mensal usada para estimar o deságio na seleção.
-   - `concentracao_maxima_por_sacado`: `0.30` = no máximo 30% do alvo por sacado.
+
+   > Os campos `limite_global_akf`, `limite_por_sacado` e `concentracao_maxima_por_sacado`
+   > **não barram mais a seleção** — o limite da AKF é volátil. A seleção apenas prioriza
+   > pelo menor prazo e soma títulos até o valor-alvo.
 
 Sem esse arquivo, o app usa valores padrão.
 

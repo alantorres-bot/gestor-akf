@@ -3,3 +3,11 @@ gatherUsageStats = false
 
 [server]
 headless = true
+
+# Identidade visual Neo Formas (azul-aço da logo)
+[theme]
+primaryColor = "#3E5A82"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#EEF2F8"
+textColor = "#1F2A37"
+font = "sans serif"

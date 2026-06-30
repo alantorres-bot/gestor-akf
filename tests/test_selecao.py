@@ -63,30 +63,31 @@ def test_marca_sem_boleto():
     assert "boleto" in r.itens[0].observacao.lower()
 
 
-def test_limite_global():
+def test_limite_global_nao_e_aplicado():
+    # O limite global da AKF é volátil -> NÃO barra mais a seleção, mesmo configurado.
     titulos = [_t("A", "100000", "2026-07-10"), _t("B", "100000", "2026-07-11")]
-    # já há 950k antecipados, limite 1M -> só cabe mais 50k -> nada cabe (títulos 100k)
     r = selecionar_titulos(
         titulos, D("200000"), REF, _params(limite_global_akf=D("1000000")),
         exposicao_atual=D("950000"),
     )
-    assert r.qtd == 0
-    assert len(r.excluidos_limite) == 2
+    assert r.qtd == 2
+    assert r.excluidos_limite == []
+    assert r.atingiu_alvo is True
 
 
-def test_concentracao_por_sacado():
+def test_concentracao_nao_e_aplicada():
+    # Concentração máxima por sacado também não barra mais.
     titulos = [
         _t("A", "60000", "2026-07-10", cliente="SACADO 1", cod="1"),
         _t("B", "60000", "2026-07-11", cliente="SACADO 1", cod="1"),
         _t("C", "60000", "2026-07-12", cliente="SACADO 2", cod="2"),
     ]
-    # alvo 150k, concentração máx 30% -> 45k por sacado. A entra (1º), B excede -> barrado
     r = selecionar_titulos(
         titulos, D("150000"), REF, _params(concentracao_maxima_por_sacado=D("0.30")),
     )
     nomes = {i.titulo.titulo for i in r.itens}
-    assert "A" in nomes
-    assert any(t.titulo == "B" for t in r.excluidos_concentracao)
+    assert {"A", "B", "C"} == nomes          # todos entram, sem barrar
+    assert r.excluidos_concentracao == []
 
 
 def test_custo_e_desembolso_estimados():
