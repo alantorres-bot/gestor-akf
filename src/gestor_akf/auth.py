@@ -43,59 +43,37 @@ def is_admin(papel: Optional[str]) -> bool:
 # --------------------------------------------------------------------------- #
 # Integração com o Streamlit (não usada nos testes)
 # --------------------------------------------------------------------------- #
-def _email_logado() -> Optional[str]:  # pragma: no cover - depende do Streamlit
+def _email_oidc() -> Optional[str]:  # pragma: no cover - depende do Streamlit
+    """E-mail do usuário autenticado via OIDC (st.login). None se não logado."""
     import streamlit as st
 
-    email = None
-    # Community Cloud (Streamlit 1.41.x) expõe o e-mail do viewer aqui, sem OIDC.
     try:
-        eu = getattr(st, "experimental_user", None)
-        if eu is not None:
-            email = eu.get("email") if hasattr(eu, "get") else getattr(eu, "email", None)
+        if not bool(st.user.is_logged_in):
+            return None
+        email = getattr(st.user, "email", None)
     except Exception:
-        email = None
-    # OIDC nativo (st.login) / versões com [auth] configurado.
-    if not email:
-        try:
-            email = getattr(st.user, "email", None)
-        except Exception:
-            email = None
-    if not email:
-        email = db._segredo("DEV_EMAIL")  # fallback p/ testar deploy manualmente
+        # fallback p/ testar deploy manualmente sem OIDC
+        email = db._segredo("DEV_EMAIL")
     return email.lower().strip() if email else None
 
 
 def exigir_login():  # pragma: no cover - depende do Streamlit
     """Garante usuário autorizado. Retorna (email, papel) ou interrompe a página.
 
-    Sem Supabase configurado, opera em modo local (admin) para desenvolvimento.
+    - Sem Supabase configurado: modo local (admin) para desenvolvimento.
+    - Em produção: login com Google via OIDC (st.login), papel pela tabela usuarios.
     """
     import streamlit as st
 
     if not db.configurado():
         return EMAIL_LOCAL, "admin"
 
-    email = _email_logado()
+    email = _email_oidc()
     if not email:
-        st.error("Faça login para acessar o sistema.")
-        # DIAGNÓSTICO TEMPORÁRIO — mostra o que o Streamlit expõe sobre o usuário.
-        diag = {}
-        try:
-            eu = getattr(st, "experimental_user", None)
-            diag["experimental_user_type"] = type(eu).__name__
-            diag["experimental_user"] = (
-                eu.to_dict() if hasattr(eu, "to_dict")
-                else (dict(eu) if eu else None)
-            )
-        except Exception as e:  # noqa: BLE001
-            diag["experimental_user_err"] = repr(e)
-        try:
-            u = st.user
-            diag["user_type"] = type(u).__name__
-            diag["user"] = u.to_dict() if hasattr(u, "to_dict") else None
-        except Exception as e:  # noqa: BLE001
-            diag["user_err"] = repr(e)
-        st.json(diag)
+        st.title("💸 Gestor de Antecipações AKF")
+        st.info("Entre com sua conta **Google da Neo Formas** para acessar o sistema.")
+        if st.button("🔐 Entrar com Google", type="primary"):
+            st.login()  # usa a configuração [auth] dos secrets
         st.stop()
 
     boot = db._segredo("BOOTSTRAP_ADMIN_EMAIL")
@@ -110,10 +88,12 @@ def exigir_login():  # pragma: no cover - depende do Streamlit
         st.stop()
 
     if not papel:
-        st.error(
-            f"Sem acesso para **{email}**. "
-            "Peça a um administrador para liberar seu e-mail no sistema."
+        st.warning(
+            f"Você entrou como **{email}**, mas esse e-mail ainda não tem acesso "
+            "liberado. Peça a um administrador para cadastrá-lo no sistema."
         )
+        if st.button("Sair"):
+            st.logout()
         st.stop()
 
     return email, papel

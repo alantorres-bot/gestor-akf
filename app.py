@@ -110,8 +110,11 @@ st.sidebar.divider()
 st.sidebar.caption(f"👤 {email_usuario} · **{papel_usuario}**")
 if not db.configurado():
     st.sidebar.caption("⚙️ Modo local (banco não configurado).")
-elif not pode_escrever:
-    st.sidebar.caption("🔒 Perfil de leitura: você consulta, mas não altera dados.")
+else:
+    if not pode_escrever:
+        st.sidebar.caption("🔒 Perfil de leitura: você consulta, mas não altera dados.")
+    if st.sidebar.button("Sair", use_container_width=True):
+        st.logout()
 
 
 # --------------------------------------------------------------------------- #

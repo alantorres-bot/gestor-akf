@@ -11,9 +11,8 @@ pymupdf>=1.24          # renderiza o PDF em imagem
 rapidocr-onnxruntime>=1.3   # OCR local (modelos embutidos, não baixa nada online)
 
 # Interface
-# Fixado em 1.41.x: nessa versão o Community Cloud preenche o e-mail do viewer
-# automaticamente em st.experimental_user (a partir de 1.42 isso exige OIDC).
-streamlit>=1.41,<1.42
+streamlit>=1.42          # st.login() — login Google via OIDC
+Authlib>=1.3.2           # exigido pelo st.login (OIDC)
 
 # Banco compartilhado (modo multiusuário hospedado)
 supabase>=2.4            # cliente Postgres/Storage (import sob demanda)
